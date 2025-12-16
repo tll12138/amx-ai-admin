@@ -1,0 +1,41 @@
+import type { IDS, PageQuery } from '#/api/common';
+
+import { commonExport } from '#/api/helper';
+import { requestClient as request } from '#/api/request';
+
+#set ($baseURL = "/${moduleName}/${businessName}")
+export const baseUrl = '/${moduleName}/${businessName}';
+export const baseName = '${functionName}';
+
+// ${functionName} API
+export const ${BusinessName}Api = {
+    // 查询${functionName}列表
+    getList: async (params: PageQuery) => {
+        return await request.get(`${baseURL}/list`, { params });
+    },
+
+    // 查询${functionName}详情
+    getDetail: async (${pkColumn.javaField}: number | string) => {
+        return await request.get(`${baseURL}/${${pkColumn.javaField}}`);
+    },
+
+    // 新增${functionName}
+    create: async (data: any) => {
+        return await request.postWithMsg(`${baseURL}`, data);
+    },
+
+    // 修改${functionName}
+    update: async (data: any) => {
+        return await request.putWithMsg(`${baseURL}`, data);
+    },
+
+    // 删除${functionName}
+    delete: async (${pkColumn.javaField}: IDS) => {
+        return await request.deleteWithMsg(`${baseURL}/${${pkColumn.javaField}}`);
+    },
+
+    // 导出商品
+    export: async (data: any) => {
+        return await commonExport(`${baseURL}/export`, data);
+    },
+};

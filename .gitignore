@@ -1,0 +1,33 @@
+# ===== IntelliJ IDEA =====
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ===== JRebel =====
+.rebel.xml
+
+
+# ===== Maven =====
+target/
+.flattened-pom.xml
+
+# ===== Gradle =====
+.gradle/
+build/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Logs =====
+logs/
+*.log
+
+# ===== Runtime =====
+*.pid
+*.tmp
+
+# ===== Node (如果有前端) =====
+node_modules/
+dist/
