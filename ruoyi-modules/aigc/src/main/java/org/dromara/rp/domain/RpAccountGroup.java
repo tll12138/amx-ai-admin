@@ -38,5 +38,9 @@ public class RpAccountGroup extends BaseDo {
          * 额外信息
          */
         private String extraInfo;
+        /**
+         * 关联rpa账号
+         */
+        private Integer rpa_no;
 
 }

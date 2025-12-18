@@ -1,46 +1,38 @@
 package org.dromara.ai.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.lang.Opt;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
-import com.github.yulichang.toolkit.WrapperUtils;
 import com.github.yulichang.wrapper.MPJLambdaWrapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.ai.base.bo.AiBaseBo;
+import org.dromara.ai.domain.AiGenerationTask;
 import org.dromara.ai.domain.AiGoods;
 import org.dromara.ai.domain.AiModel;
 import org.dromara.ai.domain.AiPromptStyle;
-import org.dromara.ai.domain.bo.AiCommentTaskBo;
+import org.dromara.ai.domain.bo.AiGenerationTaskBo;
+import org.dromara.ai.domain.vo.AiGenerationTaskVo;
 import org.dromara.ai.domain.vo.AiTaskHistoryVo;
-import org.dromara.ai.enums.GuidelineEnum;
-import org.dromara.ai.enums.SentimentEnum;
+import org.dromara.ai.mapper.AiGenerationTaskMapper;
 import org.dromara.ai.mapper.AiGoodsMapper;
+import org.dromara.ai.service.IAiGenerationTaskService;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
-import org.dromara.common.core.utils.ValidatorUtils;
-import org.dromara.common.core.validate.AddGroup;
-import org.dromara.common.core.validate.EditGroup;
-import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.mybatis.core.page.PageQuery;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.RequiredArgsConstructor;
+import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.satoken.utils.LoginHelper;
 import org.springframework.stereotype.Service;
-import org.dromara.ai.domain.bo.AiGenerationTaskBo;
-import org.dromara.ai.domain.vo.AiGenerationTaskVo;
-import org.dromara.ai.domain.AiGenerationTask;
-import org.dromara.ai.mapper.AiGenerationTaskMapper;
-import org.dromara.ai.service.IAiGenerationTaskService;
-import static org.dromara.common.core.utils.ExcelUtil.ImportEntities;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * AI生成任务Service业务层处理
@@ -64,7 +56,7 @@ public class AiGenerationTaskServiceImpl implements IAiGenerationTaskService {
      * @return AI生成任务
      */
     @Override
-    public AiGenerationTaskVo queryById(String id){
+    public AiGenerationTaskVo queryById(String id) {
         return baseMapper.selectVoById(id);
     }
 
@@ -152,9 +144,58 @@ public class AiGenerationTaskServiceImpl implements IAiGenerationTaskService {
 
     /**
      * 保存前的数据校验
+     * 校验内容：必填字段、关联数据存在性、唯一约束
      */
-    private void validEntityBeforeSave(AiGenerationTask entity){
-        //TODO 做一些数据校验,如唯一约束
+    private void validEntityBeforeSave(AiGenerationTask entity) {
+        // 1. 必填字段校验
+        if (entity.getType() == null) {
+            throw new ServiceException("任务类型不能为空");
+        }
+        if (StringUtils.isBlank(entity.getStyle())) {
+            throw new ServiceException("创作风格不能为空");
+        }
+        if (StringUtils.isBlank(entity.getModel())) {
+            throw new ServiceException("AI模型不能为空");
+        }
+        if (StringUtils.isBlank(entity.getGenerateStatus())) {
+            throw new ServiceException("生成状态不能为空");
+        }
+
+        // 2. 关联数据存在性校验
+        AiPromptStyle style = Db.getById(entity.getStyle(), AiPromptStyle.class);
+        if (style == null) {
+            throw new ServiceException("创作风格不存在，请检查");
+        }
+        AiModel model = Db.getById(entity.getModel(), AiModel.class);
+        if (model == null) {
+            throw new ServiceException("AI模型不存在，请检查");
+        }
+        if (StringUtils.isNotBlank(entity.getProductId())) {
+            AiGoods product = Db.getById(entity.getProductId(), AiGoods.class);
+            if (product == null) {
+                throw new ServiceException("关联产品不存在，请检查");
+            }
+        }
+
+        // 3. 唯一约束校验
+        LambdaQueryWrapper<AiGenerationTask> wrapper = Wrappers.lambdaQuery();
+        // 仅当 productId 不为空时，添加产品ID条件
+        if (StringUtils.isNotBlank(entity.getProductId())) {
+            wrapper.eq(AiGenerationTask::getProductId, entity.getProductId());
+        }
+        // 模型和风格为必填项，直接添加条件
+        wrapper.eq(AiGenerationTask::getModel, entity.getModel())
+            .eq(AiGenerationTask::getStyle, entity.getStyle());
+        // 编辑场景：当ID不为空时，排除当前记录
+        if (StringUtils.isNotBlank(entity.getId())) {
+            wrapper.ne(AiGenerationTask::getId, entity.getId());
+        }
+
+        // 查询是否存在重复记录
+        AiGenerationTask exist = baseMapper.selectOne(wrapper);
+        if (exist != null) {
+            throw new ServiceException("同一产品、模型和风格的任务已存在，请勿重复创建");
+        }
     }
 
     /**
@@ -166,7 +207,7 @@ public class AiGenerationTaskServiceImpl implements IAiGenerationTaskService {
      */
     @Override
     public Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid) {
-        if(isValid){
+        if (isValid) {
             //TODO 做一些业务上的校验,判断是否需要校验
         }
         return baseMapper.deleteByIds(ids) > 0;
@@ -193,15 +234,15 @@ public class AiGenerationTaskServiceImpl implements IAiGenerationTaskService {
     @Override
     public List<String> getCompetitors(String id) {
 
-        if (StringUtils.isBlank(id)){
+        if (StringUtils.isBlank(id)) {
             return Collections.emptyList();
         }
         AiGenerationTask aiGenerationTask = baseMapper.selectById(id);
-        if (aiGenerationTask == null){
+        if (aiGenerationTask == null) {
             return Collections.emptyList();
         }
         String competitorIds = aiGenerationTask.getCompetitorIds();
-        if (StringUtils.isBlank(competitorIds)){
+        if (StringUtils.isBlank(competitorIds)) {
             return Collections.emptyList();
         }
         List<String> competitorIdList = Arrays.asList(competitorIds.split(","));
@@ -211,7 +252,7 @@ public class AiGenerationTaskServiceImpl implements IAiGenerationTaskService {
         return aiGoodsMapper.selectObjs(in);
     }
 
-    public static AiBaseBo convertModifyVo2TaskBo(AiGenerationTaskBo modifyVo){
+    public static AiBaseBo convertModifyVo2TaskBo(AiGenerationTaskBo modifyVo) {
         AiBaseBo taskBo = new AiBaseBo();
         taskBo.setModel(modifyVo.getModel());
         taskBo.setStyle(modifyVo.getStyle());
@@ -221,6 +262,7 @@ public class AiGenerationTaskServiceImpl implements IAiGenerationTaskService {
         taskBo.setTopP(modifyVo.getTopP());
         return taskBo;
     }
+
     public static String handleModifySystemMessage(AiGenerationTaskBo taskBo) {
         String style = taskBo.getStyle();
         if (StringUtils.isEmpty(style)) {
@@ -241,16 +283,16 @@ public class AiGenerationTaskServiceImpl implements IAiGenerationTaskService {
             throw new ServiceException("产品不能为空");
         }
         AiGoods product = Db.getById(productId, AiGoods.class);
-        if (product == null){
+        if (product == null) {
             throw new ServiceException("产品不存在");
         }
 
         String basePromptTemplate =
             """
-            请你根据此产品信息:{}；以及原文信息：{}；
-            根据下面的要求修改原文中的此部分内容：{}；
-            返回结果：只需返回修改后的此段的内容即可，不需要返回其他段落和额外的说明内容；
-            """;
+                请你根据此产品信息:{}；以及原文信息：{}；
+                根据下面的要求修改原文中的此部分内容：{}；
+                返回结果：只需返回修改后的此段的内容即可，不需要返回其他段落和额外的说明内容；
+                """;
         String userMessage = StrUtil.format(
             basePromptTemplate,
             product.toString(),

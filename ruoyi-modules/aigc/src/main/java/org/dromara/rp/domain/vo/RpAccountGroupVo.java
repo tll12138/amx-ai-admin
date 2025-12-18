@@ -50,4 +50,9 @@ public class RpAccountGroupVo implements Serializable {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
+
+    /**
+     * 关联rpa账号
+     */
+    private Integer rpa_no;
 }

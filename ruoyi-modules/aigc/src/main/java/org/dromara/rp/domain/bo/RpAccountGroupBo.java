@@ -43,5 +43,10 @@ public class RpAccountGroupBo extends BaseDo {
          */
         private String extraInfo;
 
+        /**
+         * 关联rpa账号
+         */
+        private Integer rpa_no;
+
 
 }
