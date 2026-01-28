@@ -19,6 +19,7 @@ import org.dromara.ai.domain.vo.AiGenerationTaskVo;
 import org.dromara.ai.domain.vo.AiTaskHistoryVo;
 import org.dromara.ai.mapper.AiGenerationTaskMapper;
 import org.dromara.ai.mapper.AiGoodsMapper;
+import org.dromara.ai.service.IAiGeneratedContentService;
 import org.dromara.ai.service.IAiGenerationTaskService;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
@@ -48,6 +49,8 @@ public class AiGenerationTaskServiceImpl implements IAiGenerationTaskService {
     private final AiGenerationTaskMapper baseMapper;
 
     private final AiGoodsMapper aiGoodsMapper;
+
+    private final IAiGeneratedContentService aiGeneratedContentService;
 
     /**
      * 查询AI生成任务
@@ -124,6 +127,7 @@ public class AiGenerationTaskServiceImpl implements IAiGenerationTaskService {
         boolean flag = baseMapper.insert(add) > 0;
         if (flag) {
             bo.setId(add.getId());
+            aiGeneratedContentService.parseAndSaveContent(add);
             return add.getId();
         }
         return "";
@@ -161,41 +165,6 @@ public class AiGenerationTaskServiceImpl implements IAiGenerationTaskService {
             throw new ServiceException("生成状态不能为空");
         }
 
-        // 2. 关联数据存在性校验
-        AiPromptStyle style = Db.getById(entity.getStyle(), AiPromptStyle.class);
-        if (style == null) {
-            throw new ServiceException("创作风格不存在，请检查");
-        }
-        AiModel model = Db.getById(entity.getModel(), AiModel.class);
-        if (model == null) {
-            throw new ServiceException("AI模型不存在，请检查");
-        }
-        if (StringUtils.isNotBlank(entity.getProductId())) {
-            AiGoods product = Db.getById(entity.getProductId(), AiGoods.class);
-            if (product == null) {
-                throw new ServiceException("关联产品不存在，请检查");
-            }
-        }
-
-        // 3. 唯一约束校验
-        LambdaQueryWrapper<AiGenerationTask> wrapper = Wrappers.lambdaQuery();
-        // 仅当 productId 不为空时，添加产品ID条件
-        if (StringUtils.isNotBlank(entity.getProductId())) {
-            wrapper.eq(AiGenerationTask::getProductId, entity.getProductId());
-        }
-        // 模型和风格为必填项，直接添加条件
-        wrapper.eq(AiGenerationTask::getModel, entity.getModel())
-            .eq(AiGenerationTask::getStyle, entity.getStyle());
-        // 编辑场景：当ID不为空时，排除当前记录
-        if (StringUtils.isNotBlank(entity.getId())) {
-            wrapper.ne(AiGenerationTask::getId, entity.getId());
-        }
-
-        // 查询是否存在重复记录
-        AiGenerationTask exist = baseMapper.selectOne(wrapper);
-        if (exist != null) {
-            throw new ServiceException("同一产品、模型和风格的任务已存在，请勿重复创建");
-        }
     }
 
     /**

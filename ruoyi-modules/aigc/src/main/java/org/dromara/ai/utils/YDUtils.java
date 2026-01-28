@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.dromara.constant.ConstantURL.GET_YD_KEY;
+import static org.dromara.constant.ConstantURL.GET_YD_ROBOT_LIST;
 import static org.dromara.constant.ConstantURL.START_YD;
 
 /**
@@ -102,6 +103,24 @@ public class YDUtils {
         return RunYDWithTokenAndParam(map);
     }
 
+    public boolean RunYD(String ydAppId, String ydRobotName, String jsonParams) {
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("accountName", ydRobotName);
+        map.put("robotUuid", ydAppId);
+        map.put("waitTimeoutSeconds", 18000);
+
+        ArrayList<Object> objects = new ArrayList<>();
+        HashMap<String, String> params = new HashMap<>();
+        params.put("name", "params");
+        params.put("type", "str");
+        params.put("value", jsonParams);
+        objects.add(params);
+        map.put("params", objects);
+
+        //获取accessKey
+        return RunYDWithTokenAndParam(map);
+    }
+
     private boolean RunYDWithTokenAndParam(HashMap<String, Object> map) {
         //获取accessKey
         String accessToken = getAccessTokenWithRedis();
@@ -132,6 +151,42 @@ public class YDUtils {
             log.info("请求结果:" + response1);
             JSONObject resData1 = JSONUtil.parseObj(response1);
             return resData1.get("code").toString().equals("200");
+        }
+    }
+
+    public JSONObject getYDRobotList() {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("page", "1");
+        map.put("size", "100");
+        //获取accessKey
+        String accessToken = getAccessTokenWithRedis();
+        //构建请求头
+        String authorization = "Bearer " + accessToken;
+        //发送Post请求
+        String response = HttpRequest.post(GET_YD_ROBOT_LIST)
+            .header("Authorization", authorization)
+            .header("Content-Type", "application/json")
+            .body(JSONUtil.toJsonStr(map))
+            .execute()
+            .body();
+        log.info("请求结果:" + response);
+        JSONObject resData = JSONUtil.parseObj(response);
+        if (resData.get("code").toString().equals("200")) {
+            return resData;
+        } else {
+            String accessToken1 = getAccessToken();
+            //构建请求头
+            String authorization1 = "Bearer " + accessToken1;
+            //发送Post请求
+            String response1 = HttpRequest.post(GET_YD_ROBOT_LIST)
+                .header("Authorization", authorization1)
+                .header("Content-Type", "application/json")
+                .body(JSONUtil.toJsonStr(map))
+                .execute()
+                .body();
+            log.info("请求结果:" + response1);
+            JSONObject resData1 = JSONUtil.parseObj(response1);
+            return resData1.get("code").toString().equals("200")?resData:null;
         }
     }
 

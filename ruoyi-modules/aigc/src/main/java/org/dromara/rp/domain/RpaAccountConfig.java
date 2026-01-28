@@ -8,39 +8,39 @@ import lombok.EqualsAndHashCode;
 import java.io.Serial;
 
 /**
- * 账号分组对象 rp_account_group
+ * RPA账号配置对象 rpa_account_config
  *
- * @author ZRL
- * @date 2025-11-13
+ * @author LL
+ * @date 2026-01-28
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-@TableName("rp_account_group")
-public class RpAccountGroup extends BaseDo {
+@TableName("rpa_account_config")
+public class RpaAccountConfig extends BaseDo {
 
         @Serial
         private static final long serialVersionUID = 1L;
 
         /**
-         * 分组ID
+         * 主键ID
          */
         @TableId(value = "id", type = IdType.AUTO)
         private Long id;
         /**
-         * 分组名称
+         * 账号名称
          */
-        private String groupName;
+        private String robotClientName;
         /**
-         * 分组所属平台（如: WeChat, Douyin, Weibo 等）
+         * 账号唯一标识
          */
-        private String platform;
+        private String robotClientUuid;
         /**
-         * 额外信息
+         * 状态 (0正常 1异常)
          */
-        private String extraInfo;
+        private String status;
         /**
-         * 关联rpa账号
+         * 备注
          */
-        private Integer rpaNo;
+        private String remark;
 
 }

@@ -133,6 +133,11 @@ public class LoginUser implements Serializable {
     private String deviceType;
 
     /**
+     * 手机号码
+     */
+    private String phoneNumber;
+
+    /**
      * 获取登录id
      */
     public String getLoginId() {

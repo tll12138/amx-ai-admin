@@ -22,4 +22,12 @@ public class ConstantStr {
 
     public static final String EMPTY = "";
 
+    /**
+     * 媒体类型：图片
+     */
+    public static final String MEDIA_TYPE_IMAGE = "0";
+    /**
+     * 媒体类型：视频
+     */
+    public static final String MEDIA_TYPE_VIDEO = "1";
 }

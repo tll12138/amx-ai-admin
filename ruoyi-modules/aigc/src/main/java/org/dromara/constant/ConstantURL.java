@@ -41,6 +41,11 @@ public class ConstantURL {
     public static final String GET_YD_KEY = "https://api.yingdao.com/oapi/token/v2/token/create";
 
     /**
+     * 获取影刀机器人列表
+     */
+    public static final String GET_YD_ROBOT_LIST = "https://api.yingdao.com/oapi/dispatch/v2/client/list";
+
+    /**
      * 获取抖音clientToken
      */
     public static final String GET_DY_CLIENT_TOKEN = "https://open.douyin.com/oauth/client_token/";

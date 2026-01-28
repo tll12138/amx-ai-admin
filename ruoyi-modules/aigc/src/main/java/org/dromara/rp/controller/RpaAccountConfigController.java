@@ -15,9 +15,9 @@ import org.dromara.common.log.enums.BusinessType;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.web.core.BaseController;
-import org.dromara.rp.domain.bo.RpArticleTaskBo;
-import org.dromara.rp.domain.vo.RpArticleTaskVo;
-import org.dromara.rp.service.IRpArticleTaskService;
+import org.dromara.rp.domain.bo.RpaAccountConfigBo;
+import org.dromara.rp.domain.vo.RpaAccountConfigVo;
+import org.dromara.rp.service.IRpaAccountConfigService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,84 +35,84 @@ import java.util.List;
 import static org.dromara.common.satoken.utils.LoginHelper.getUsername;
 
 /**
- * 文章任务主
+ * RPA账号配置
  *
- * @author ZRL
- * @date 2025-11-13
+ * @author LL
+ * @date 2026-01-28
  */
 @Validated
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/rp/articleTask")
-public class RpArticleTaskController extends BaseController {
+@RequestMapping("/rp/accountConfig")
+public class RpaAccountConfigController extends BaseController {
 
-    private final IRpArticleTaskService rpArticleTaskService;
+    private final IRpaAccountConfigService rpaAccountConfigService;
 
     /**
-     * 查询文章任务主列表
+     * 查询RPA账号配置列表
      */
-    @SaCheckPermission("rp:articleTask:list")
+    @SaCheckPermission("rp:accountConfig:list")
     @GetMapping("/list")
-    public TableDataInfo<RpArticleTaskVo> list(RpArticleTaskBo searchVO, PageQuery pageQuery) {
-        return rpArticleTaskService.queryPageList(searchVO, pageQuery);
+    public TableDataInfo<RpaAccountConfigVo> list(RpaAccountConfigBo searchVO, PageQuery pageQuery) {
+        return rpaAccountConfigService.queryPageList(searchVO, pageQuery);
     }
 
     /**
-     * 导出文章任务主列表
+     * 导出RPA账号配置列表
      */
-    @SaCheckPermission("rp:articleTask:export")
-    @Log(title = "文章任务主", businessType = BusinessType.EXPORT)
+    @SaCheckPermission("rp:accountConfig:export")
+    @Log(title = "RPA账号配置", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(RpArticleTaskBo rpArticleTask, HttpServletResponse response) {
-        List<RpArticleTaskVo> list = rpArticleTaskService.queryList(rpArticleTask);
-        ExcelUtil.exportExcel(list, "文章任务主", RpArticleTaskVo.class, response);
+    public void export(RpaAccountConfigBo rpaAccountConfig, HttpServletResponse response) {
+        List<RpaAccountConfigVo> list = rpaAccountConfigService.queryList(rpaAccountConfig);
+        ExcelUtil.exportExcel(list, "RPA账号配置", RpaAccountConfigVo.class, response);
     }
 
     /**
-     * 获取文章任务主详细信息
+     * 获取RPA账号配置详细信息
      *
      * @param id 主键
      */
-    @SaCheckPermission("rp:articleTask:query")
+    @SaCheckPermission("rp:accountConfig:query")
     @GetMapping("/{id}")
-    public R<RpArticleTaskVo> getInfo(@NotNull(message = "主键不能为空")
+    public R<RpaAccountConfigVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable Long id) {
-        return R.ok(rpArticleTaskService.queryById(id));
+        return R.ok(rpaAccountConfigService.queryById(id));
     }
 
     /**
-     * 新增文章任务主
+     * 新增RPA账号配置
      */
-//    @SaCheckPermission("rp:articleTask:add")
-    @Log(title = "文章任务主", businessType = BusinessType.INSERT)
+    @SaCheckPermission("rp:accountConfig:add")
+    @Log(title = "RPA账号配置", businessType = BusinessType.INSERT)
     @RepeatSubmit()
-    @PostMapping("/add")
-    public R<Void> add(@Validated(AddGroup.class) @RequestBody RpArticleTaskBo bo) {
-        return toAjax(rpArticleTaskService.insertRpArticleTask(bo));
+    @PostMapping()
+    public R<Void> add(@Validated(AddGroup.class) @RequestBody RpaAccountConfigBo bo) {
+        return toAjax(rpaAccountConfigService.insertRpaAccountConfig(bo));
     }
 
     /**
-     * 修改文章任务主
+     * 修改RPA账号配置
      */
-    @SaCheckPermission("rp:articleTask:edit")
-    @Log(title = "文章任务主", businessType = BusinessType.UPDATE)
+    @SaCheckPermission("rp:accountConfig:edit")
+    @Log(title = "RPA账号配置", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
-    @PutMapping("/update")
-    public R<Void> edit(@Validated(EditGroup.class) @RequestBody RpArticleTaskBo bo) {
-        return toAjax(rpArticleTaskService.updateRpArticleTask(bo));
+    @PutMapping()
+    public R<Void> edit(@Validated(EditGroup.class) @RequestBody RpaAccountConfigBo bo) {
+        return toAjax(rpaAccountConfigService.updateRpaAccountConfig(bo));
     }
 
     /**
-     * 删除文章任务主
+     * 删除RPA账号配置
      *
      * @param ids 主键串
      */
-    @SaCheckPermission("rp:articleTask:remove")
-    @Log(title = "文章任务主", businessType = BusinessType.DELETE)
+    @SaCheckPermission("rp:accountConfig:remove")
+    @Log(title = "RPA账号配置", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
                           @PathVariable Long[] ids) {
-        return toAjax(rpArticleTaskService.deleteWithValidByIds(List.of(ids), true));
+        return toAjax(rpaAccountConfigService.deleteWithValidByIds(List.of(ids), true));
     }
 
 
@@ -123,7 +123,7 @@ public class RpArticleTaskController extends BaseController {
     @PostMapping("/importTemplate")
     public void importTemplate(HttpServletResponse response)
     {
-        ExcelUtil.exportExcel(new ArrayList<>(), "文章任务主数据", RpArticleTaskVo.class, response);
+        ExcelUtil.exportExcel(new ArrayList<>(), "RPA账号配置数据", RpaAccountConfigVo.class, response);
     }
 
 
@@ -132,13 +132,13 @@ public class RpArticleTaskController extends BaseController {
      * @param file 响应对象
      * @param updateSupport 是否更新已存在数据
      */
-    @SaCheckPermission("rp:articleTask:add")
+    @SaCheckPermission("rp:accountConfig:add")
     @PostMapping("/importData")
     public R<String> importData(MultipartFile file, boolean updateSupport) throws Exception
     {
-        List<RpArticleTaskVo> dataList = ExcelUtil.importExcel(file.getInputStream(), RpArticleTaskVo.class);
+        List<RpaAccountConfigVo> dataList = ExcelUtil.importExcel(file.getInputStream(), RpaAccountConfigVo.class);
         String operatorName = getUsername();
-        String message = rpArticleTaskService.importRpArticleTask(dataList, updateSupport, operatorName);
+        String message = rpaAccountConfigService.importRpaAccountConfig(dataList, updateSupport, operatorName);
         return R.ok(message);
     }
 }

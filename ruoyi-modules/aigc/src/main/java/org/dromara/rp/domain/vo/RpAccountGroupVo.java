@@ -1,12 +1,9 @@
 package org.dromara.rp.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
-import com.alibaba.excel.annotation.ExcelProperty;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-import org.dromara.common.excel.annotation.ExcelDictFormat;
-import org.dromara.common.excel.convert.ExcelDictConvert;
 import org.dromara.rp.domain.RpAccountGroup;
 
 import java.io.Serial;
@@ -54,5 +51,5 @@ public class RpAccountGroupVo implements Serializable {
     /**
      * 关联rpa账号
      */
-    private Integer rpa_no;
+    private Integer rpaNo;
 }

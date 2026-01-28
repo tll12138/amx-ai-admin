@@ -1,8 +1,8 @@
 package org.dromara.rp.mapper;
 
+import org.dromara.common.mybatis.core.mapper.BaseMapperPlus;
 import org.dromara.rp.domain.RpArticleTask;
 import org.dromara.rp.domain.vo.RpArticleTaskVo;
-import org.dromara.common.mybatis.core.mapper.BaseMapperPlus;
 
 /**
  * 文章任务主Mapper接口

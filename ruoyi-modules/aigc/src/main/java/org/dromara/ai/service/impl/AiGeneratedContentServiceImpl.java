@@ -1,6 +1,7 @@
 package org.dromara.ai.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateTime;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -13,6 +14,8 @@ import org.dromara.ai.domain.bo.AiGeneratedContentBo;
 import org.dromara.ai.domain.vo.AiGeneratedContentVo;
 import org.dromara.ai.mapper.AiGeneratedContentMapper;
 import org.dromara.ai.service.IAiGeneratedContentService;
+import org.dromara.ai.utils.RegexWithCommonsLangParser;
+import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.core.utils.ValidatorUtils;
@@ -95,6 +98,8 @@ public class AiGeneratedContentServiceImpl implements IAiGeneratedContentService
         lqw.eq(StringUtils.isNotBlank(bo.getParsedParagraphs()), AiGeneratedContent::getParsedParagraphs, bo.getParsedParagraphs());
         lqw.eq(StringUtils.isNotBlank(bo.getKeywordAnalysis()), AiGeneratedContent::getKeywordAnalysis, bo.getKeywordAnalysis());
         lqw.eq(bo.getGenerateTime() != null, AiGeneratedContent::getGenerateTime, bo.getGenerateTime());
+        // 只查询未使用的数据
+        lqw.eq(AiGeneratedContent::getIsUsed, 0);
         return lqw;
     }
 
@@ -175,11 +180,33 @@ public class AiGeneratedContentServiceImpl implements IAiGeneratedContentService
      */
     @Override
     public void parseAndSaveContent(AiGenerationTask task) {
-        // 1. 创建解析后的内容实体
-        AiGeneratedContent content = new AiGeneratedContent();
-        content.setTaskId(task.getId());
-        content.setOriginalContent(task.getAiContent());
+        // 解析
+        String originalContent = task.getAiContent();
+        String taskId = task.getId();
+        if (StringUtils.isBlank(originalContent)) {
+            log.warn("任务ID:{} 的AI生成内容为空，跳过解析保存", taskId);
+            return;
+        }
+        log.info("任务ID:{} 原始AI内容：{}", taskId, originalContent);
 
+        AiGeneratedContent content = new AiGeneratedContent();
+        content.setTaskId(taskId);
+        content.setOriginalContent(originalContent);
+
+        try {
+            RegexWithCommonsLangParser.ParseResult parseResult = RegexWithCommonsLangParser.parseText(originalContent);
+            content.setParsedTitle(parseResult.getTitle());
+            content.setParsedParagraphs(parseResult.getContent());
+            content.setKeywordAnalysis(parseResult.getTags());
+            log.info("任务ID:{} 解析结果：{}", taskId, parseResult);
+        } catch (Exception e) {
+            log.warn("任务ID:{} 的AI内容处理失败", task.getId(), e);
+            throw new ServiceException("AI文章保存失败，请稍后再试");
+        }
+
+        content.setGenerateTime(new DateTime());
+        baseMapper.insert(content);
+        log.info("任务ID:{} 的AI内容解析并保存成功", task.getId());
     }
 
     /**

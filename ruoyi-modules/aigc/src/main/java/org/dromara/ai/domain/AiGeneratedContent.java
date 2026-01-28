@@ -53,5 +53,9 @@ public class AiGeneratedContent extends BaseDo {
          * 生成时间
          */
         private Date generateTime;
+        /**
+         * 是否已使用
+         */
+        private Integer isUsed;
 
 }
