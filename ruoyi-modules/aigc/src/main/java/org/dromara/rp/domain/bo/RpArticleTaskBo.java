@@ -65,5 +65,10 @@ public class RpArticleTaskBo extends BaseDo {
          */
         private RpContentInfo content;
 
+        /**
+         * 终端类型
+         */
+        private Long deviceType = 0L;
+
 
 }

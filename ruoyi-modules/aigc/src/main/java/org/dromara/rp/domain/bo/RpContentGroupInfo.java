@@ -74,4 +74,24 @@ public class RpContentGroupInfo {
      * 笔记中@的人
      */
     private String mention;
+
+    /**
+     * 是否控评
+     */
+    private String ifControlEvaluation;
+
+    /**
+     * 控评内容
+     */
+    private String controlEvaluationContent;
+
+    /**
+     * 是否比特
+     */
+    private String ifBite;
+
+    /**
+     * 比特浏览器id
+     */
+    private String biteNo;
 }

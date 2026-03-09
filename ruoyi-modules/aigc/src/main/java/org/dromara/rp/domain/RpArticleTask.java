@@ -50,4 +50,10 @@ public class RpArticleTask extends BaseDo {
      */
     private Long status;
 
+    /**
+     * 终端类型
+     */
+    private Long deviceType;
+
+
 }

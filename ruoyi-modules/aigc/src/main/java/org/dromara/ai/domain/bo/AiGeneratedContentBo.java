@@ -16,7 +16,7 @@ import java.util.Date;
  * AI生成内容解析业务对象 ai_generated_content
  *
  * @author LL
- * @date 2025-12-18
+ * @date 2026-02-05
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -60,6 +60,12 @@ public class AiGeneratedContentBo extends BaseDo {
          */
         @NotNull(message = "生成时间不能为空", groups = { AddGroup.class, EditGroup.class })
         private Date generateTime;
+
+        /**
+         * 是否已使用
+         */
+        @NotNull(message = "是否已使用不能为空", groups = { AddGroup.class, EditGroup.class })
+        private Long isUsed;
 
 
 }

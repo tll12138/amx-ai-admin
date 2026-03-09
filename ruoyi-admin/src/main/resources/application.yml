@@ -119,6 +119,8 @@ security:
     - /error
     - /*/api-docs
     - /*/api-docs/**
+    - /*/articleTask/add
+    - /*/articleDetail/callback
 
 # 多租户配置
 tenant:

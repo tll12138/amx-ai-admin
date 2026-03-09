@@ -45,7 +45,7 @@ import static org.dromara.common.satoken.utils.LoginHelper.getUsername;
 @RequiredArgsConstructor
 @RestController
 @Slf4j
-@RequestMapping("/lon/generatedContent")
+@RequestMapping("/ai/generatedContent")
 public class AiGeneratedContentController extends BaseController {
 
     private final IAiGeneratedContentService aiGeneratedContentService;
@@ -53,7 +53,7 @@ public class AiGeneratedContentController extends BaseController {
     /**
      * 查询AI生成内容解析列表
      */
-    @SaCheckPermission("lon:generatedContent:list")
+    @SaCheckPermission("ai:generatedContent:list")
     @GetMapping("/list")
     public TableDataInfo<AiGeneratedContentVo> list(AiGeneratedContentBo searchVO, PageQuery pageQuery) {
         return aiGeneratedContentService.queryPageList(searchVO, pageQuery);
@@ -62,7 +62,7 @@ public class AiGeneratedContentController extends BaseController {
     /**
      * 导出AI生成内容解析列表
      */
-    @SaCheckPermission("lon:generatedContent:export")
+    @SaCheckPermission("ai:generatedContent:export")
     @Log(title = "AI生成内容解析", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
     public void export(AiGeneratedContentBo aiGeneratedContent, HttpServletResponse response) {
@@ -75,7 +75,7 @@ public class AiGeneratedContentController extends BaseController {
      *
      * @param id 主键
      */
-    @SaCheckPermission("lon:generatedContent:query")
+    @SaCheckPermission("ai:generatedContent:query")
     @GetMapping("/{id}")
     public R<AiGeneratedContentVo> getInfo(@NotNull(message = "主键不能为空")
                                      @PathVariable String id) {
@@ -85,7 +85,7 @@ public class AiGeneratedContentController extends BaseController {
     /**
      * 新增AI生成内容解析
      */
-    @SaCheckPermission("lon:generatedContent:add")
+    @SaCheckPermission("ai:generatedContent:add")
     @Log(title = "AI生成内容解析", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping()
@@ -96,7 +96,7 @@ public class AiGeneratedContentController extends BaseController {
     /**
      * 修改AI生成内容解析
      */
-    @SaCheckPermission("lon:generatedContent:edit")
+    @SaCheckPermission("ai:generatedContent:edit")
     @Log(title = "AI生成内容解析", businessType = BusinessType.UPDATE)
     @RepeatSubmit()
     @PutMapping()
@@ -109,7 +109,7 @@ public class AiGeneratedContentController extends BaseController {
      *
      * @param ids 主键串
      */
-    @SaCheckPermission("lon:generatedContent:remove")
+    @SaCheckPermission("ai:generatedContent:remove")
     @Log(title = "AI生成内容解析", businessType = BusinessType.DELETE)
     @DeleteMapping("/{ids}")
     public R<Void> remove(@NotEmpty(message = "主键不能为空")
@@ -134,7 +134,7 @@ public class AiGeneratedContentController extends BaseController {
      * @param file 响应对象
      * @param updateSupport 是否更新已存在数据
      */
-    @SaCheckPermission("lon:generatedContent:add")
+    @SaCheckPermission("ai:generatedContent:add")
     @PostMapping("/importData")
     public R<String> importData(MultipartFile file, boolean updateSupport) throws Exception
     {

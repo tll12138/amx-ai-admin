@@ -8,39 +8,35 @@ import lombok.EqualsAndHashCode;
 import java.io.Serial;
 
 /**
- * 账号分组对象 rp_account_group
+ * 比特账号信息对象 rp_bit_account
  *
- * @author ZRL
- * @date 2025-11-13
+ * @author LL
+ * @date 2026-03-02
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
-@TableName("rp_account_group")
-public class RpAccountGroup extends BaseDo {
+@TableName("rp_bit_account")
+public class RpBitAccount extends BaseDo {
 
         @Serial
         private static final long serialVersionUID = 1L;
 
         /**
-         * 分组ID
+         * 比特账号ID
          */
         @TableId(value = "id", type = IdType.AUTO)
         private Long id;
         /**
-         * 分组名称
+         * 账号名称
          */
-        private String groupName;
+        private String accountName;
         /**
-         * 分组所属平台（如: WeChat, Douyin, Weibo 等）
+         * 账号编码
          */
-        private String platform;
+        private String accountCode;
         /**
-         * 额外信息
+         * 账号状态
          */
-        private String extraInfo;
-        /**
-         * 关联rpa账号
-         */
-        private Long rpaNo;
+        private Long status;
 
 }

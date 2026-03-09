@@ -98,8 +98,7 @@ public class AiGeneratedContentServiceImpl implements IAiGeneratedContentService
         lqw.eq(StringUtils.isNotBlank(bo.getParsedParagraphs()), AiGeneratedContent::getParsedParagraphs, bo.getParsedParagraphs());
         lqw.eq(StringUtils.isNotBlank(bo.getKeywordAnalysis()), AiGeneratedContent::getKeywordAnalysis, bo.getKeywordAnalysis());
         lqw.eq(bo.getGenerateTime() != null, AiGeneratedContent::getGenerateTime, bo.getGenerateTime());
-        // 只查询未使用的数据
-        lqw.eq(AiGeneratedContent::getIsUsed, 0);
+        lqw.eq(bo.getIsUsed() != null, AiGeneratedContent::getIsUsed, bo.getIsUsed());
         return lqw;
     }
 

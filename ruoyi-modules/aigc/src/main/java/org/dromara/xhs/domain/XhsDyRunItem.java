@@ -56,4 +56,24 @@ public class XhsDyRunItem {
      * 提及@
      */
     private String mention;
+
+    /**
+     * 是否控评
+     */
+    private String ifControlEvaluation;
+
+    /**
+     * 控评内容
+     */
+    private String controlEvaluationContent;
+
+    /**
+     * 是否比特
+     */
+    private Long isBite;
+
+    /**
+     * 比特浏览器编号
+     */
+    private String biteId;
 }

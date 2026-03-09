@@ -18,7 +18,7 @@ import java.util.Date;
  * AI生成内容解析视图对象 ai_generated_content
  *
  * @author LL
- * @date 2025-12-18
+ * @date 2026-02-05
  */
 @Data
 @ExcelIgnoreUnannotated
@@ -71,6 +71,12 @@ public class AiGeneratedContentVo implements Serializable {
      */
     @ExcelProperty(value = "生成时间")
     private Date generateTime;
+
+    /**
+     * 是否已使用
+     */
+    @ExcelProperty(value = "是否已使用")
+    private Long isUsed;
 
 
 }

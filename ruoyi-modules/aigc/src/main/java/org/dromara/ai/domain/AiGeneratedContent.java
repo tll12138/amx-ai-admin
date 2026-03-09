@@ -14,7 +14,7 @@ import java.util.Date;
  * AI生成内容解析对象 ai_generated_content
  *
  * @author LL
- * @date 2025-12-18
+ * @date 2026-02-05
  */
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -56,6 +56,6 @@ public class AiGeneratedContent extends BaseDo {
         /**
          * 是否已使用
          */
-        private Integer isUsed;
+        private Long isUsed;
 
 }

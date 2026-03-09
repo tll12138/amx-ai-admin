@@ -46,7 +46,7 @@ public class RpAccountGroupBo extends BaseDo {
         /**
          * 关联rpa账号
          */
-        private Integer rpaNo;
+        private Long rpaNo;
 
 
 }

@@ -1,8 +1,8 @@
 package org.dromara.rp.mapper;
 
+import org.dromara.common.mybatis.core.mapper.BaseMapperPlus;
 import org.dromara.rp.domain.RpAccountGroup;
 import org.dromara.rp.domain.vo.RpAccountGroupVo;
-import org.dromara.common.mybatis.core.mapper.BaseMapperPlus;
 
 /**
  * 账号分组Mapper接口

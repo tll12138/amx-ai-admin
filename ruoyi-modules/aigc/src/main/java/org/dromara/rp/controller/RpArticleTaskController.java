@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.core.validate.AddGroup;
 import org.dromara.common.core.validate.EditGroup;
@@ -40,6 +41,7 @@ import static org.dromara.common.satoken.utils.LoginHelper.getUsername;
  * @author ZRL
  * @date 2025-11-13
  */
+@Slf4j
 @Validated
 @RequiredArgsConstructor
 @RestController

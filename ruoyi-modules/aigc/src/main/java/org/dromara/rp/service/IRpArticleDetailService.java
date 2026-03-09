@@ -75,4 +75,17 @@ public interface IRpArticleDetailService {
      * @return 导入结果内容
      */
     String importRpArticleDetail(List<RpArticleDetailVo> rpArticleDetailList, boolean updateSupport, String operatorName);
+
+    /**
+     * 根据主任务id获取该任务下所有详情
+     * @param mainId
+     * @return
+     */
+    List<RpArticleDetailVo> queryMainDetailList(Long mainId);
+
+    /**
+     * 回调文章任务明细
+     * @param id
+     */
+    void callback(Long id, Boolean status, String picUrl, String noteId);
 }

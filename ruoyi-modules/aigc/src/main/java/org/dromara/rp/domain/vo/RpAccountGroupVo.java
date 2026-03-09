@@ -51,5 +51,10 @@ public class RpAccountGroupVo implements Serializable {
     /**
      * 关联rpa账号
      */
-    private Integer rpaNo;
+    private Long rpaNo;
+
+    /**
+     * 关联rpa账号名称
+     */
+    private String rpaName;
 }

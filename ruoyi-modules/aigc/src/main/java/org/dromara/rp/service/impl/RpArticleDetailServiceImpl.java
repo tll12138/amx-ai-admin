@@ -1,31 +1,43 @@
 package org.dromara.rp.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.lang.Opt;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.dromara.ai.utils.YDUtils;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.core.utils.ValidatorUtils;
 import org.dromara.common.core.validate.AddGroup;
 import org.dromara.common.core.validate.EditGroup;
-import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.common.json.utils.JsonUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.common.satoken.utils.LoginHelper;
+import org.dromara.rp.domain.RpAccount;
+import org.dromara.rp.domain.RpArticleDetail;
 import org.dromara.rp.domain.bo.RpArticleDetailBo;
 import org.dromara.rp.domain.vo.RpArticleDetailVo;
-import org.dromara.rp.domain.RpArticleDetail;
+import org.dromara.rp.domain.vo.RpaAccountConfigVo;
+import org.dromara.rp.mapper.RpAccountMapper;
 import org.dromara.rp.mapper.RpArticleDetailMapper;
+import org.dromara.rp.mapper.RpaAccountConfigMapper;
 import org.dromara.rp.service.IRpArticleDetailService;
-import static org.dromara.common.core.utils.ExcelUtil.ImportEntities;
+import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static org.dromara.common.core.utils.ExcelUtil.ImportEntities;
 
 /**
  * 文章任务明细Service业务层处理
@@ -33,11 +45,15 @@ import java.util.function.Function;
  * @author ZRL
  * @date 2025-11-13
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class RpArticleDetailServiceImpl implements IRpArticleDetailService {
 
     private final RpArticleDetailMapper baseMapper;
+    private final RpaAccountConfigMapper accountConfigMapper;
+    private final YDUtils ydUtils;
+    private final RpAccountMapper rpAccountMapper;
 
     private final Function<RpArticleDetailVo, String> getEntityName = (RpArticleDetailVo  entity) -> {
         if (entity == null){
@@ -65,8 +81,39 @@ public class RpArticleDetailServiceImpl implements IRpArticleDetailService {
      */
     @Override
     public TableDataInfo<RpArticleDetailVo> queryPageList(RpArticleDetailBo bo, PageQuery pageQuery) {
+        // 1. 原有的分页查询文章列表
         LambdaQueryWrapper<RpArticleDetail> lqw = buildQueryWrapper(bo);
         Page<RpArticleDetailVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        List<RpArticleDetailVo> records = result.getRecords();
+
+        // 2. 收集所有非空的 accountId
+        List<Long> accountIds = records.stream()
+            .map(RpArticleDetailVo::getAccountId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+
+        // 3. 批量查询账号配置，并转为 Map<id, robotClientName>
+        if (!accountIds.isEmpty()) {
+            Map<Long, String> accountNameMap = accountConfigMapper.selectVoByIds(accountIds)
+                .stream()
+                .filter(vo -> vo.getRobotClientName() != null) // 过滤空值防止 NPE
+                .collect(Collectors.toMap(
+                    RpaAccountConfigVo::getId,
+                    RpaAccountConfigVo::getRobotClientName,
+                    (v1, v2) -> v1 // 防止重复 key 冲突
+                ));
+
+            // 4. 遍历文章列表，从 Map 中取值赋值
+            records.forEach(item -> {
+                if (item.getAccountId() != null) {
+                    String accountName = accountNameMap.get(item.getAccountId());
+                    item.setAccountName(accountName);
+                }
+            });
+        }
+
+        result.setRecords(records);
         return TableDataInfo.build(result);
     }
 
@@ -164,6 +211,52 @@ public class RpArticleDetailServiceImpl implements IRpArticleDetailService {
             this::importRpArticleDetailInfo,
             getEntityName
         );
+    }
+
+    /**
+     * 根据主任务id获取该任务下所有详情
+     *
+     * @param mainId
+     * @return
+     */
+    @Override
+    public List<RpArticleDetailVo> queryMainDetailList(Long mainId) {
+        return baseMapper.selectVoList(new LambdaQueryWrapper<RpArticleDetail>().eq(RpArticleDetail::getTaskId, mainId));
+    }
+
+    /**
+     * 回调文章任务明细
+     *
+     * @param id
+     */
+    @Override
+    public void callback(Long id, Boolean status, String picUrl, String noteId) {
+        if (id == null) {
+            return;
+        }
+        RpArticleDetail rpArticleDetail = baseMapper.selectById(id);
+        if (rpArticleDetail == null){
+            return;
+        }
+        Long accountId = rpArticleDetail.getAccountId();
+        RpAccount rpAccount = rpAccountMapper.selectById(accountId);
+        String ifControlEvaluation = rpArticleDetail.getIfControlEvaluation();
+        if ("1".equals(ifControlEvaluation)) {
+            String controlEvaluationContent = rpArticleDetail.getControlEvaluationContent();
+            Map<String, Object> mobileItem = new HashMap<>(10);
+            mobileItem.put("account", LoginHelper.getPhoneNumber());
+            mobileItem.put("device", rpAccount.getDeviceCode());
+            mobileItem.put("RPA", "yx01@puqi");
+            mobileItem.put("noteId", noteId);
+            mobileItem.put("comment", controlEvaluationContent);
+            //todo 调用影刀控评接口 目前只支持抖音
+            ydUtils.RunYD("68ffdc65-fc13-4c38-8df4-11335c647a83", "yx01@puqi", JsonUtils.toJsonString(mobileItem));
+        }
+        rpArticleDetail.setPublishStatus(status?2L:3L);
+        rpArticleDetail.setNoteId(noteId);
+        rpArticleDetail.setUpdateTime(new Date());
+        rpArticleDetail.setPostScreenshot(picUrl);
+        baseMapper.updateById(rpArticleDetail);
     }
 
     /**

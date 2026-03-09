@@ -1,29 +1,35 @@
 package org.dromara.rp.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
+import org.dromara.common.core.utils.dropdown.common.DropDownOptionsGroup;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.rp.domain.RpAccount;
 import org.dromara.rp.domain.RpAccountGroup;
+import org.dromara.rp.domain.RpaAccountConfig;
 import org.dromara.rp.domain.bo.RpAccountGroupBo;
-import org.dromara.common.core.utils.dropdown.common.DropDownOptionsGroup;
+import org.dromara.rp.domain.vo.RpAccountBriefVo;
 import org.dromara.rp.domain.vo.RpAccountGroupVo;
+import org.dromara.rp.domain.vo.RpAccountGroupWithAccountsVo;
 import org.dromara.rp.mapper.RpAccountGroupMapper;
 import org.dromara.rp.mapper.RpAccountMapper;
-import org.dromara.rp.domain.RpAccount;
-import org.dromara.rp.domain.vo.RpAccountBriefVo;
-import org.dromara.rp.domain.vo.RpAccountGroupWithAccountsVo;
+import org.dromara.rp.mapper.RpaAccountConfigMapper;
 import org.dromara.rp.service.IRpAccountGroupService;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.dromara.common.core.utils.dropdown.DropdownConverter.convertToDropdown;
 
@@ -39,6 +45,7 @@ public class RpAccountGroupServiceImpl implements IRpAccountGroupService {
 
     private final RpAccountGroupMapper baseMapper;
     private final RpAccountMapper accountMapper;
+    private final RpaAccountConfigMapper rpaAccountConfigMapper;
 
     private final Function<RpAccountGroupVo, Long> getEntityID = (RpAccountGroupVo entity) -> {
         if (entity == null) {
@@ -67,9 +74,51 @@ public class RpAccountGroupServiceImpl implements IRpAccountGroupService {
      */
     @Override
     public TableDataInfo<RpAccountGroupVo> queryPageList(RpAccountGroupBo bo, PageQuery pageQuery) {
+// 1. 构建查询条件，分页查询基础数据
         LambdaQueryWrapper<RpAccountGroup> lqw = buildQueryWrapper(bo);
-        Page<RpAccountGroupVo> result = baseMapper.selectVoPage(pageQuery.build(), lqw);
-        return TableDataInfo.build(result);
+        Page<RpAccountGroupVo> resultPage = baseMapper.selectVoPage(pageQuery.build(), lqw);
+        List<RpAccountGroupVo> voList = resultPage.getRecords();
+
+        // 2. 若查询结果为空，直接返回
+        if (CollectionUtils.isEmpty(voList)) {
+            return TableDataInfo.build(resultPage);
+        }
+
+        // 3. 收集所有非空的rpaNo
+        List<Long> rpaNoList = voList.stream()
+            .map(RpAccountGroupVo::getRpaNo)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+        // 4. 批量查询rpa_account_config表，封装rpaNo -> robot_client_name的Map
+        Map<Long, String> rpaNoToNameMap = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(rpaNoList)) {
+            LambdaQueryWrapper<RpaAccountConfig> configLqw = new LambdaQueryWrapper<RpaAccountConfig>()
+                .select(RpaAccountConfig::getId, RpaAccountConfig::getRobotClientName) // 只查需要的字段，减少IO
+                .in(RpaAccountConfig::getId, rpaNoList);
+            List<RpaAccountConfig> configList = rpaAccountConfigMapper.selectList(configLqw);
+
+            // 转换为Map
+            Map<Long, String> tempMap  = configList.stream()
+                .collect(Collectors.toMap(
+                    RpaAccountConfig::getId,
+                    RpaAccountConfig::getRobotClientName,
+                    (k1, k2) -> k1
+                ));
+
+            rpaNoToNameMap.putAll(tempMap);
+        }
+
+        // 5. 遍历VO列表，填充rpaName
+        voList.forEach(vo -> {
+            if (vo.getRpaNo() != null) {
+                vo.setRpaName(rpaNoToNameMap.getOrDefault(vo.getRpaNo(), ""));
+            }
+        });
+
+        // 6. 重新设置填充后的列表，返回分页结果
+        resultPage.setRecords(voList);
+        return TableDataInfo.build(resultPage);
     }
 
     /**
