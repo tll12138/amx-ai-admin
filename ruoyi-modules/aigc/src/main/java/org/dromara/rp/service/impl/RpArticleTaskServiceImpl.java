@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Assert;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -26,6 +27,7 @@ import org.dromara.rp.domain.RpAccount;
 import org.dromara.rp.domain.RpAccountGroup;
 import org.dromara.rp.domain.RpArticleTask;
 import org.dromara.rp.domain.RpBitAccount;
+import org.dromara.rp.domain.YdAppConfig;
 import org.dromara.rp.domain.bo.RpArticleDetailBo;
 import org.dromara.rp.domain.bo.RpArticleTaskBo;
 import org.dromara.rp.domain.bo.RpContentGroupInfo;
@@ -37,6 +39,7 @@ import org.dromara.rp.mapper.RpAccountMapper;
 import org.dromara.rp.mapper.RpArticleTaskMapper;
 import org.dromara.rp.mapper.RpBitAccountMapper;
 import org.dromara.rp.mapper.RpaAccountConfigMapper;
+import org.dromara.rp.mapper.YdAppConfigMapper;
 import org.dromara.rp.service.IRpArticleDetailService;
 import org.dromara.rp.service.IRpArticleTaskService;
 import org.dromara.xhs.domain.XhsDyRun;
@@ -93,6 +96,7 @@ public class RpArticleTaskServiceImpl implements IRpArticleTaskService {
     private final YDUtils ydUtils;
     private final RpaAccountConfigMapper rpaAccountConfigMapper;
     private final RpBitAccountMapper bitAccountMapper;
+    private final YdAppConfigMapper ydAppConfigMapper;
 
     private final Function<RpArticleTaskVo, String> getEntityName = (RpArticleTaskVo  entity) -> {
         if (entity == null){
@@ -429,7 +433,7 @@ public class RpArticleTaskServiceImpl implements IRpArticleTaskService {
             log.info("【PC端】调用影刀接口，RPA编号：{}，执行参数：{}", rpaNo, jsonParam);
 
             // 调用接口
-            callYdApi(rpaNo, jsonParam,platform,taskId);
+            callYdApi(rpaNo, jsonParam,platform,taskId,"PC");
         }
     }
 
@@ -501,23 +505,36 @@ public class RpArticleTaskServiceImpl implements IRpArticleTaskService {
             log.info("【移动端】调用影刀接口，RPA编号：{}，执行参数：{}", rpaNo, jsonParam);
 
             // 调用接口
-            callYdApi(rpaNo, jsonParam,platform,taskId);
+            callYdApi(rpaNo, jsonParam,platform,taskId,"移动");
         }
     }
 
     /**
      * 通用影刀接口调用方法
      */
-    private void callYdApi(Long rpaNo, String jsonParam, String platform,Long taskId) {
+    private void callYdApi(Long rpaNo, String jsonParam, String platform,Long taskId,String type) {
         // 查询RPA配置
         RpaAccountConfigVo rpaConfig = Optional.ofNullable(rpaAccountConfigMapper.selectVoById(rpaNo))
             .orElseThrow(() -> new ServiceException(String.format("RPA编号【%d】对应的配置不存在，无法调用接口", rpaNo)));
-        String ydAppId = switch ( platform) {
-            case "小红书" -> "03ffda93-f595-4ef7-8d4a-82fedb08e346";
-            case "抖音" -> "adceafe1-3a18-4291-a1ae-0da7fa727668";
-            case "逛逛" -> "86fa53ab-a388-488c-8b87-f5bc7ed8e195";
-            default -> throw new ServiceException("不支持的平台");
-        };
+        List<YdAppConfig> ydAppPlatform = ydAppConfigMapper.selectList(new QueryWrapper<YdAppConfig>().eq("platform", platform));
+
+        if (ydAppPlatform.isEmpty()) {
+            throw new ServiceException(String.format("平台【%s】对应的应用配置不存在", platform));
+        }
+
+        // 根据设备类型获取应用ID
+        String deviceType = "PC".equals(type) ? "0" : ("移动".equals(type) ? "1" : null);
+        if (deviceType == null) {
+            throw new ServiceException(String.format("不支持的平台类型：【%s】", type));
+        }
+
+        String ydAppId = ydAppPlatform.stream()
+            .filter(it -> deviceType.equals(it.getDeviceType()))
+            .findFirst()
+            .orElseThrow(() -> new ServiceException(
+                String.format("平台【%s】中未找到设备类型【%s】的应用配置", platform, type)
+            ))
+            .getApplicationId();
         // 调用影刀接口
         try {
             log.info("调用影刀接口开始，RPA编号：{}，参数：{},uuid:{},name:{}", rpaNo, jsonParam, rpaConfig.getRobotClientUuid(), rpaConfig.getRobotClientName());
