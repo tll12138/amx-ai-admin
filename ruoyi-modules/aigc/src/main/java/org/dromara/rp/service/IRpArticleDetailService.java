@@ -1,5 +1,6 @@
 package org.dromara.rp.service;
 
+import org.dromara.rp.domain.bo.RpArticleDetailCallbackBo;
 import org.dromara.rp.domain.vo.RpArticleDetailVo;
 import org.dromara.rp.domain.bo.RpArticleDetailBo;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
@@ -85,7 +86,6 @@ public interface IRpArticleDetailService {
 
     /**
      * 回调文章任务明细
-     * @param id
      */
-    void callback(Long id, Boolean status, String picUrl, String noteId);
+    void callback(RpArticleDetailCallbackBo bo);
 }

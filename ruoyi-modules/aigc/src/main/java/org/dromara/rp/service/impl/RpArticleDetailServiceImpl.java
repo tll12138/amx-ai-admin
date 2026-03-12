@@ -7,30 +7,29 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.dromara.ai.utils.YDUtils;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.core.utils.ValidatorUtils;
 import org.dromara.common.core.validate.AddGroup;
 import org.dromara.common.core.validate.EditGroup;
-import org.dromara.common.json.utils.JsonUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
-import org.dromara.common.satoken.utils.LoginHelper;
-import org.dromara.rp.domain.RpAccount;
 import org.dromara.rp.domain.RpArticleDetail;
+import org.dromara.rp.domain.RpArticleTask;
 import org.dromara.rp.domain.bo.RpArticleDetailBo;
+import org.dromara.rp.domain.bo.RpArticleDetailCallbackBo;
 import org.dromara.rp.domain.vo.RpArticleDetailVo;
+import org.dromara.rp.domain.vo.RpArticleTaskVo;
 import org.dromara.rp.domain.vo.RpaAccountConfigVo;
 import org.dromara.rp.mapper.RpAccountMapper;
 import org.dromara.rp.mapper.RpArticleDetailMapper;
+import org.dromara.rp.mapper.RpArticleTaskMapper;
 import org.dromara.rp.mapper.RpaAccountConfigMapper;
 import org.dromara.rp.service.IRpArticleDetailService;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,8 +50,8 @@ import static org.dromara.common.core.utils.ExcelUtil.ImportEntities;
 public class RpArticleDetailServiceImpl implements IRpArticleDetailService {
 
     private final RpArticleDetailMapper baseMapper;
+    private final RpArticleTaskMapper taskMapper;
     private final RpaAccountConfigMapper accountConfigMapper;
-    private final YDUtils ydUtils;
     private final RpAccountMapper rpAccountMapper;
 
     private final Function<RpArticleDetailVo, String> getEntityName = (RpArticleDetailVo  entity) -> {
@@ -226,11 +225,11 @@ public class RpArticleDetailServiceImpl implements IRpArticleDetailService {
 
     /**
      * 回调文章任务明细
-     *
-     * @param id
      */
     @Override
-    public void callback(Long id, Boolean status, String picUrl, String noteId) {
+    public void callback(RpArticleDetailCallbackBo bo) {
+        log.info("回调文章任务明细: {}", bo);
+        Long id = bo.getId();
         if (id == null) {
             return;
         }
@@ -238,25 +237,13 @@ public class RpArticleDetailServiceImpl implements IRpArticleDetailService {
         if (rpArticleDetail == null){
             return;
         }
-        Long accountId = rpArticleDetail.getAccountId();
-        RpAccount rpAccount = rpAccountMapper.selectById(accountId);
-        String ifControlEvaluation = rpArticleDetail.getIfControlEvaluation();
-        if ("1".equals(ifControlEvaluation)) {
-            String controlEvaluationContent = rpArticleDetail.getControlEvaluationContent();
-            Map<String, Object> mobileItem = new HashMap<>(10);
-            mobileItem.put("account", LoginHelper.getPhoneNumber());
-            mobileItem.put("device", rpAccount.getDeviceCode());
-            mobileItem.put("RPA", "yx01@puqi");
-            mobileItem.put("noteId", noteId);
-            mobileItem.put("comment", controlEvaluationContent);
-            //todo 调用影刀控评接口 目前只支持抖音
-            ydUtils.RunYD("68ffdc65-fc13-4c38-8df4-11335c647a83", "yx01@puqi", JsonUtils.toJsonString(mobileItem));
-        }
-        rpArticleDetail.setPublishStatus(status?2L:3L);
-        rpArticleDetail.setNoteId(noteId);
+        rpArticleDetail.setPublishStatus("success".equals(bo.getStatus())?2L:3L);
         rpArticleDetail.setUpdateTime(new Date());
-        rpArticleDetail.setPostScreenshot(picUrl);
+        rpArticleDetail.setPostScreenshot(bo.getImg());
         baseMapper.updateById(rpArticleDetail);
+        RpArticleTaskVo rpArticleTaskVo = taskMapper.selectVoById(rpArticleDetail.getTaskId());
+        rpArticleTaskVo.setStatus("success".equals(bo.getStatus())?2L:3L);
+        taskMapper.updateById(BeanUtil.copyProperties(rpArticleTaskVo, RpArticleTask.class));
     }
 
     /**

@@ -451,6 +451,7 @@ public class RpArticleTaskServiceImpl implements IRpArticleTaskService {
         List<Map<String, Object>> mobileItemList = new ArrayList<>(contentGroups.size());
 
         for (RpContentGroupInfo group : contentGroups) {
+            group.setTaskId(taskId);
             Long detailId = saveRpArticleDetail(group);
             RpAccount account = rpAccountMapper.selectById(group.getAccountId());
             Long rpaNo = getRpaNoByContentGroup(group);
@@ -466,8 +467,8 @@ public class RpArticleTaskServiceImpl implements IRpArticleTaskService {
             mobileItem.put("mentions", Collections.singletonList(Optional.ofNullable(group.getMention()).orElse("")));
             mobileItem.put("type", getMobileMediaType(group.getType()));
             mobileItem.put("rpaNo", rpaNo);
-            mobileItem.put("ifBite", group.getIfBite());
-            mobileItem.put("biteId", ObjUtil.isNull(group.getIfBite()) ||"1".equals(group.getIfBite())?bitAccountMap.get(Long.valueOf(group.getBiteNo())):"");
+            mobileItem.put("ifControlEvaluation", group.getIfControlEvaluation());
+            mobileItem.put("controlEvaluationContent", group.getControlEvaluationContent());
 
             mobileItemList.add(mobileItem);
         }
@@ -513,7 +514,7 @@ public class RpArticleTaskServiceImpl implements IRpArticleTaskService {
             .orElseThrow(() -> new ServiceException(String.format("RPA编号【%d】对应的配置不存在，无法调用接口", rpaNo)));
         String ydAppId = switch ( platform) {
             case "小红书" -> "03ffda93-f595-4ef7-8d4a-82fedb08e346";
-            case "抖音" -> "e9662962-655e-43fa-b208-ab1b54bd691a";
+            case "抖音" -> "adceafe1-3a18-4291-a1ae-0da7fa727668";
             case "逛逛" -> "86fa53ab-a388-488c-8b87-f5bc7ed8e195";
             default -> throw new ServiceException("不支持的平台");
         };

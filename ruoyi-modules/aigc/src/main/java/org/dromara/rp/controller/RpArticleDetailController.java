@@ -17,6 +17,7 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.web.core.BaseController;
 import org.dromara.rp.domain.bo.RpArticleDetailBo;
+import org.dromara.rp.domain.bo.RpArticleDetailCallbackBo;
 import org.dromara.rp.domain.vo.RpArticleDetailVo;
 import org.dromara.rp.service.IRpArticleDetailService;
 import org.springframework.validation.annotation.Validated;
@@ -27,7 +28,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -154,12 +154,11 @@ public class RpArticleDetailController extends BaseController {
     }
 
 
-    @GetMapping("/callback")
+    @PostMapping("/callback")
     @Operation(summary = "回调修改任务详情状态")
-    public void callback(@RequestParam("id") Long id,
-                         @RequestParam("status") Boolean status,
-                         @RequestParam("picUrl") String picUrl,
-                         @RequestParam("noteId") String noteId) {
-        rpArticleDetailService.callback(id, status, picUrl,noteId);
+    public void callback(@RequestBody List<RpArticleDetailCallbackBo> boList) {
+        for (RpArticleDetailCallbackBo bo : boList) {
+            rpArticleDetailService.callback(bo);
+        }
     }
 }
